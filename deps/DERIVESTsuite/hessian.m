@@ -52,21 +52,27 @@ function [hess,err] = hessian(fun,x0)
 % e-mail: woodchips@rochester.rr.com
 % Release: 1.0
 % Release date: 2/10/2007
+
 % parameters that we might allow to change
 params.StepRatio = 2.0000001;
 params.RombergTerms = 3;
+
 % get the size of x0 so we can reshape
 % later.
 sx = size(x0);
+
 % was a string supplied?
 if ischar(fun)
   fun = str2func(fun);
 end
+
 % total number of derivatives we will need to take
 nx = length(x0);
+
 % get the diagonal elements of the hessian (2nd partial
 % derivatives wrt each variable.)
 [hess,err] = hessdiag(fun,x0);
+
 % form the eventual hessian matrix, stuffing only
 % the diagonals for now.
 hess = diag(hess);
@@ -75,9 +81,11 @@ if nx<2
   % the hessian matrix is 1x1. all done
   return
 end
+
 % get the gradient vector. This is done only to decide
 % on intelligent step sizes for the mixed partials
 [grad,graderr,stepsize] = gradest(fun,x0);
+
 % Get params.RombergTerms+1 estimates of the upper
 % triangle of the hessian matrix
 dfac = params.StepRatio.^(-(0:params.RombergTerms)');
@@ -104,7 +112,10 @@ for i = 2:nx
     err(j,i) = err(i,j);
   end
 end
+
+
 end % mainline function end
+
 % =======================================
 %      sub-functions
 % =======================================
@@ -112,7 +123,10 @@ function vec = swap2(vec,ind1,val1,ind2,val2)
 % swaps val as element ind, into the vector vec
 vec(ind1) = val1;
 vec(ind2) = val2;
+
 end % sub-function end
+
+
 % ============================================
 % subfunction - romberg extrapolation
 % ============================================
@@ -126,7 +140,9 @@ function [der_romb,errest] = rombextrap(StepRatio,der_init,rombexpon)
 %  der_romb - derivative estimates returned
 %  errest - error estimates
 %  amp - noise amplification factor due to the romberg step
+
 srinv = 1/StepRatio;
+
 % do nothing if no romberg terms
 nexpon = length(rombexpon);
 rmat = ones(nexpon+2,nexpon+1);
@@ -149,18 +165,25 @@ switch nexpon
     rmat(4,2:4) = srinv.^(3*rombexpon);
     rmat(5,2:4) = srinv.^(4*rombexpon);
 end
+
 % qr factorization used for the extrapolation as well
 % as the uncertainty estimates
 [qromb,rromb] = qr(rmat,0);
+
 % the noise amplification is further amplified by the Romberg step.
 % amp = cond(rromb);
+
 % this does the extrapolation to a zero step size.
 ne = length(der_init);
 rombcoefs = rromb\(qromb'*der_init);
 der_romb = rombcoefs(1,:)';
+
 % uncertainty estimate of derivative prediction
 s = sqrt(sum((der_init - rmat*rombcoefs).^2,1));
 rinv = rromb\eye(nexpon+1);
 cov1 = sum(rinv.^2,2); % 1 spare dof
 errest = s'*12.7062047361747*sqrt(cov1(1));
+
 end % rombextrap
+
+

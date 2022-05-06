@@ -189,6 +189,7 @@ function [der,errest,finaldelta] = derivest(fun,x0,varargin)
 % e-mail: woodchips@rochester.rr.com
 % Release: 1.0
 % Release date: 12/27/2006
+
 par.DerivativeOrder = 1;
 par.MethodOrder = 4;
 par.Style = 'central';
@@ -201,6 +202,7 @@ par.MaxStep = 100;
 par.StepRatio = 2.0000001;
 par.NominalStep = [];
 par.Vectorized = 'yes';
+
 na = length(varargin);
 if (rem(na,2)==1)
   error 'Property/value pairs must come as PAIRS of arguments.'
@@ -208,6 +210,7 @@ elseif na>0
   par = parse_pv_pairs(par,varargin);
 end
 par = check_params(par);
+
 % Was fun a string, or an inline/anonymous function?
 if (nargin<1)
   help derivest
@@ -218,14 +221,17 @@ elseif ischar(fun)
   % a character function name
   fun = str2func(fun);
 end
+
 % no default for x0
 if (nargin<2) || isempty(x0)
   error 'x0 was not supplied'
 end
 par.NominalStep = max(x0,0.02);
+
 % was a single point supplied?
 nx0 = size(x0);
 n = prod(nx0);
+
 % Set the steps to use.
 if isempty(par.FixedStep)
   % Basic sequence of steps, relative to a stepsize of 1.
@@ -240,6 +246,7 @@ else
   end
   delta = par.FixedStep*par.StepRatio .^(-(0:(ndel-1)))';
 end
+
 % generate finite differencing rule in advance.
 % The rule is for a nominal unit step size, and will
 % be scaled later to reflect the local step size.
@@ -290,6 +297,7 @@ switch par.Style
   case {'forward' 'backward'}
     % These two cases are identical, except at the very end,
     % where a sign will be introduced.
+
     % No odd/even trans, but we already dropped
     % off the constant term
     if par.MethodOrder==1
@@ -317,6 +325,7 @@ switch par.Style
     
 end % switch on par.style (generating fdarule)
 nfda = length(fdarule);
+
 % will we need fun(x0)?
 if (rem(par.DerivativeOrder,2) == 0) || ~strncmpi(par.Style,'central',7)
   if strcmpi(par.Vectorized,'yes')
@@ -331,6 +340,7 @@ if (rem(par.DerivativeOrder,2) == 0) || ~strncmpi(par.Style,'central',7)
 else
   f_x0 = [];
 end
+
 % Loop over the elements of x0, reducing it to
 % a scalar problem. Sorry, vectorization is not
 % complete here, but this IS only a single loop.
@@ -340,6 +350,7 @@ finaldelta = der;
 for i = 1:n
   x0i = x0(i);
   h = par.NominalStep(i);
+
   % a central, forward or backwards differencing rule?
   % f_del is the set of all the function evaluations we
   % will generate. For a central rule, it will have the
@@ -397,13 +408,16 @@ for i = 1:n
   if length(f_del)~=ndel
     error 'fun did not return the correct size result (fun must be vectorized)'
   end
+
   % Apply the finite difference rule at each delta, scaling
   % as appropriate for delta and the requested DerivativeOrder.
   % First, decide how many of these estimates we will end up with.
   ne = ndel + 1 - nfda - par.RombergTerms;
+
   % Form the initial derivative estimates from the chosen
   % finite difference method.
   der_init = vec2mat(f_del,ne,nfda)*fdarule.';
+
   % scale to reflect the local delta
   der_init = der_init(:)./(h*delta(1:ne)).^par.DerivativeOrder;
   
@@ -452,7 +466,9 @@ for i = 1:n
     der(i) = der_romb(ind);
   end
 end
+
 end % mainline end
+
 % ============================================
 % subfunction - romberg extrapolation
 % ============================================
@@ -466,7 +482,9 @@ function [der_romb,errest] = rombextrap(StepRatio,der_init,rombexpon)
 %  der_romb - derivative estimates returned
 %  errest - error estimates
 %  amp - noise amplification factor due to the romberg step
+
 srinv = 1/StepRatio;
+
 % do nothing if no romberg terms
 nexpon = length(rombexpon);
 rmat = ones(nexpon+2,nexpon+1);
@@ -489,22 +507,29 @@ switch nexpon
     rmat(4,2:4) = srinv.^(3*rombexpon);
     rmat(5,2:4) = srinv.^(4*rombexpon);
 end
+
 % qr factorization used for the extrapolation as well
 % as the uncertainty estimates
 [qromb,rromb] = qr(rmat,0);
+
 % the noise amplification is further amplified by the Romberg step.
 % amp = cond(rromb);
+
 % this does the extrapolation to a zero step size.
 ne = length(der_init);
 rhs = vec2mat(der_init,nexpon+2,max(1,ne - (nexpon+2)));
 rombcoefs = rromb\(qromb.'*rhs); 
 der_romb = rombcoefs(1,:).';
+
 % uncertainty estimate of derivative prediction
 s = sqrt(sum((rhs - rmat*rombcoefs).^2,1));
 rinv = rromb\eye(nexpon+1);
 cov1 = sum(rinv.^2,2); % 1 spare dof
 errest = s.'*12.7062047361747*sqrt(cov1(1));
+
 end % rombextrap
+
+
 % ============================================
 % subfunction - vec2mat
 % ============================================
@@ -516,7 +541,10 @@ mat = vec(ind);
 if n==1
   mat = mat.';
 end
+
 end % vec2mat
+
+
 % ============================================
 % subfunction - fdamat
 % ============================================
@@ -527,8 +555,10 @@ function mat = fdamat(sr,parity,nterms)
 %   1 (only odd terms included)
 %   2 (only even terms included)
 % nterms - number of terms
+
 % sr is the ratio between successive steps
 srinv = 1./sr;
+
 switch parity
   case 0
     % single sided rule
@@ -546,7 +576,11 @@ switch parity
     c = 1./factorial(2:2:(2*nterms));
     mat = c(j).*srinv.^((i-1).*(2*j));
 end
+
 end % fdamat
+
+
+
 % ============================================
 % subfunction - check_params
 % ============================================
@@ -559,6 +593,7 @@ function par = check_params(par)
 % par.Style = 'central';
 % par.RombergTerms = 2;
 % par.FixedStep = [];
+
 % DerivativeOrder == 1 by default
 if isempty(par.DerivativeOrder)
   par.DerivativeOrder = 1;
@@ -567,6 +602,7 @@ else
     error 'DerivativeOrder must be scalar, one of [1 2 3 4].'
   end
 end
+
 % MethodOrder == 2 by default
 if isempty(par.MethodOrder)
   par.MethodOrder = 2;
@@ -577,6 +613,7 @@ else
     error 'MethodOrder==1 or 3 is not possible with central difference methods'
   end
 end
+
 % style is char
 valid = {'central', 'forward', 'backward'};
 if isempty(par.Style)
@@ -590,6 +627,7 @@ if (length(ind)==1)
 else
   error(['Invalid Style: ',par.Style])
 end
+
 % vectorized is char
 valid = {'yes', 'no'};
 if isempty(par.Vectorized)
@@ -603,6 +641,7 @@ if (length(ind)==1)
 else
   error(['Invalid Vectorized: ',par.Vectorized])
 end
+
 % RombergTerms == 2 by default
 if isempty(par.RombergTerms)
   par.RombergTerms = 2;
@@ -611,17 +650,22 @@ else
     error 'RombergTerms must be scalar, one of [0 1 2 3].'
   end
 end
+
 % FixedStep == [] by default
 if (length(par.FixedStep)>1) || (~isempty(par.FixedStep) && (par.FixedStep<=0))
   error 'FixedStep must be empty or a scalar, >0.'
 end
+
 % MaxStep == 10 by default
 if isempty(par.MaxStep)
   par.MaxStep = 10;
 elseif (length(par.MaxStep)>1) || (par.MaxStep<=0)
   error 'MaxStep must be empty or a scalar, >0.'
 end
+
 end % check_params
+
+
 % ============================================
 % Included subfunction - parse_pv_pairs
 % ============================================
@@ -680,8 +724,10 @@ function params=parse_pv_pairs(params,pv_pairs)
 % Note that capitalization was ignored, and the property 'viscosity'
 % was truncated as supplied. Also note that the order the pairs were
 % supplied was arbitrary.
+
 npv = length(pv_pairs);
 n = npv/2;
+
 if n~=floor(n)
   error 'Property/value pairs must come in PAIRS.'
 end
@@ -689,9 +735,11 @@ if n<=0
   % just return the defaults
   return
 end
+
 if ~isstruct(params)
   error 'No structure for defaults was supplied'
 end
+
 % there was at least one pv pair. process any supplied
 propnames = fieldnames(params);
 lpropnames = lower(propnames);
@@ -714,4 +762,11 @@ for i=1:n
   params = setfield(params,p_i,v_i); %#ok
   
 end
+
 end % parse_pv_pairs
+
+
+
+
+
+

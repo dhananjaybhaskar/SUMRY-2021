@@ -1,3 +1,7 @@
+% Roger Stafford (2022). Random Points in an n-Dimensional Hypersphere 
+% (https://www.mathworks.com/matlabcentral/fileexchange/9443-random-points-in-an-n-dimensional-hypersphere)
+% MATLAB Central File Exchange. Retrieved May 6, 2022.
+
 function X = randsphere(m,n,r)
  
 % This function returns an m by n array, X, in which 

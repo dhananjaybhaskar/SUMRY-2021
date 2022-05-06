@@ -44,11 +44,14 @@ function [HD,err,finaldelta] = hessdiag(fun,x0)
 % e-mail: woodchips@rochester.rr.com
 % Release: 1.0
 % Release date: 2/9/2007
+
 % get the size of x0 so we can reshape
 % later.
 sx = size(x0);
+
 % total number of derivatives we will need to take
 nx = numel(x0);
+
 HD = zeros(1,nx);
 err = HD;
 finaldelta = HD;
@@ -57,11 +60,17 @@ for ind = 1:nx
     @(xi) fun(swapelement(x0,ind,xi)), ...
     x0(ind),'deriv',2,'vectorized','no');
 end
+
 end % mainline function end
+
 % =======================================
 %      sub-functions
 % =======================================
 function vec = swapelement(vec,ind,val)
 % swaps val as element ind, into the vector vec
 vec(ind) = val;
+
 end % sub-function end
+
+
+

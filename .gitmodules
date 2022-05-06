@@ -1,0 +1,3 @@
+[submodule "deps/SUGAR"]
+	path = deps/SUGAR
+	url = https://github.com/KrishnaswamyLab/SUGAR.git

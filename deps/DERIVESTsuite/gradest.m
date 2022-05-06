@@ -64,11 +64,14 @@ function [grad,err,finaldelta] = gradest(fun,x0)
 % e-mail: woodchips@rochester.rr.com
 % Release: 1.0
 % Release date: 2/9/2007
+
 % get the size of x0 so we can reshape
 % later.
 sx = size(x0);
+
 % total number of derivatives we will need to take
 nx = numel(x0);
+
 grad = zeros(1,nx);
 err = grad;
 finaldelta = grad;
@@ -78,11 +81,16 @@ for ind = 1:nx
     x0(ind),'deriv',1,'vectorized','no', ...
     'methodorder',2);
 end
+
 end % mainline function end
+
 % =======================================
 %      sub-functions
 % =======================================
 function vec = swapelement(vec,ind,val)
 % swaps val as element ind, into the vector vec
 vec(ind) = val;
+
 end % sub-function end
+
+
