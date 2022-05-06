@@ -16,4 +16,3 @@ function X = randsphere(m,n,r)
 X = randn(m,n);
 s2 = sum(X.^2,2);
 X = X.*repmat(r*(gammainc(s2/2,n/2).^(1/n))./sqrt(s2),1,n);
- 
