@@ -21,7 +21,7 @@ save('camel6.mat', 'hess', 'err', 'Xopt', 'fopt', 'sample_pts', 'Z_pts')
 fig = figure('units','inch','position',[0,0,15,2.5]);
 
 subplot(1,3,1);
-surf(X, Y, reshape(Z, size(X)),reshape(Z, size(X)))
+surf(X, Y, reshape(Z, size(X)), reshape(Z, size(X)))
 shading interp
 colorbar
 

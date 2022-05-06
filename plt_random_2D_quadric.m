@@ -1,18 +1,17 @@
 close all; clear all;
 addpath(genpath(pwd));
-addpath(genpath(pwd));
 rng('shuffle');
 
 n_trials = 10;
-quadric_eval_lim = 1e3;
+quad_lim = 1e3;
 
 for i = 1:n_trials
 
     % Generate random quadric: xAx' + bx' + R 
     %Q = RandOrthMat(2);
-    %Lambda = diag(-quadric_eval_lim + quadric_eval_lim * rand(2,1));
+    %Lambda = diag(-quad_lim + quad_lim * rand(2,1));
     %A = Q * Lambda * Q'; 
-    A = quadric_eval_lim .* rand(2);
+    A = quad_lim .* rand(2);
     
     b = 10*rand(1,2);
     R = rand(1);
