@@ -8,7 +8,6 @@ is_saddle = [true, false];
 Xopt = [0, 0];
 Zopt = 0;
 
-rng(19522);
 cnt = 1;
 
 for cs = 1:numel(is_saddle)
@@ -57,7 +56,7 @@ for cs = 1:numel(is_saddle)
         configParams.plotResults = false;
         configParams.t = 5;
         configParams.kNN = 20;
-        configParams.maxInd = 200;
+        configParams.maxInd = 10;
         [DM_K, DM_nnData] = calcAffinityMat([[sample_X sample_Y] sample_Z]', configParams);
         [diff_map, DM_Lambda, DM_Psi, DM_Ms, DM_Phi, DM_K_rw] = calcDiffusionMap(DM_K, configParams);
         diffusion_coords = diff_map';
@@ -72,8 +71,6 @@ for cs = 1:numel(is_saddle)
         D = diag(1./sum(W1,2));
         W = D * W1 * D;
 
-        % TODO: use adaptive anisotropic kernel
-
         % diffusion operator
         D = diag(1./sum(W,2));
         P = D * W;
@@ -85,9 +82,8 @@ for cs = 1:numel(is_saddle)
         diff_curvature = zeros(n_samples, 1);
         for j = 1:n_samples
             idx = find(DM_pdist(j,:) < metric_thresh);
-            ball_numel = numel(idx);
-            sum_diff_probs = sum(P(j,idx));
-            diff_curvature(j) = sum_diff_probs/ball_numel;
+            ball_numel = numel()
+            diffusion_probs = sum(P(j,idx));
         end
 
         % Visualize
@@ -137,32 +133,23 @@ for cs = 1:numel(is_saddle)
         fig = figure('units','inch','position',[0,0,15,2.5]);
 
         ax(1) = subplot(1,3,1);
-        scatter3(sample_X, sample_Y, sample_Z, 3, diff_curvature, "filled")
+        scatter3(sample_X, sample_Y, sample_Z, 3, diffusion_probs, "filled")
         if b < 0
             zlim([-1, 1])
         else
             zlim([0, 1])
         end
-        colormap(ax(1),jet)
+        colormap(ax(1),flipud(parula))
         colorbar
 
         ax(2) = subplot(1,3,2);
+        
         scatter3(sample_X, sample_Y, sample_Z, 3, diag(K), "filled")
-        if b < 0
-            zlim([-1, 1])
-        else
-            zlim([0, 1])
-        end
         colormap(ax(2),jet)
         colorbar
 
         ax(3) = subplot(1,3,3);
         scatter3(sample_X, sample_Y, sample_Z, 3, diag(H), "filled")
-        if b < 0
-            zlim([-1, 1])
-        else
-            zlim([0, 1])
-        end
         colormap(ax(3),jet)
         colorbar
 

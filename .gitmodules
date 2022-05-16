@@ -1,3 +1,6 @@
 [submodule "deps/SUGAR"]
 	path = deps/SUGAR
 	url = https://github.com/KrishnaswamyLab/SUGAR.git
+[submodule "deps/diffusion_maps"]
+	path = deps/diffusion_maps
+	url = https://github.com/gmishne/diffusion_maps.git
