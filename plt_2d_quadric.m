@@ -32,7 +32,7 @@ for cs = 1:numel(is_saddle)
         Z = cellfun(Q, num2cell(mesh_pts,2));
 
         % Sample 500 points around optimum
-        sample_pts = Xopt + randsphere(500, 2, 0.2);
+        sample_pts = Xopt + randsphere(1000, 2, 0.2);
         Z_pts = cellfun(Q, num2cell(sample_pts,2));
 
         % Sampled points and optimum 
@@ -51,46 +51,51 @@ for cs = 1:numel(is_saddle)
         H = ((1+fx.^2).*fyy + (1+fy.^2).*fxx - 2.*fx.*fy.*fxy)./...
             ((1 + fx.^2 + fy.^2).^(3/2));
 
-        % diffusion map
-        configParams.normalization = 'lb';
-        configParams.self_tune = true;
-        configParams.plotResults = false;
-        configParams.t = 5;
+        % params for diffusion
+        configParams.t = 8;
+        configParams.sigma = 0.5;
         configParams.kNN = 20;
-        configParams.maxInd = 200;
-        [DM_K, DM_nnData] = calcAffinityMat([[sample_X sample_Y] sample_Z]', configParams);
-        [diff_map, DM_Lambda, DM_Psi, DM_Ms, DM_Phi, DM_K_rw] = calcDiffusionMap(DM_K, configParams);
-        diffusion_coords = diff_map';
+        configParams.num_pts = size(sample_X, 1);
 
-        % pairwise distances
-        DM_pdist = squareform(pdist(diffusion_coords));
-        Euclidean_pdist = squareform(pdist([sample_X sample_Y sample_Z]));
-
-        % anisotropic kernel
-        sigma = 0.05;
-        W1 = exp(-Euclidean_pdist.^2/(2*(sigma^2)));
+        % pairwise euclidean distance
+        euclid_pdist = squareform(pdist([sample_X sample_Y sample_Z]));
+        
+        % adaptive anisotropic kernel
+        sorted_euclid_pdist = sort(euclid_pdist, 2);
+        kNN_norm = repmat(sorted_euclid_pdist(:,configParams.kNN), 1, configParams.num_pts);
+        kNN_norm_t = kNN_norm';
+        %W1 = exp(-euclid_pdist.^2/(configParams.sigma^2));
+        W1 = (1/2)*sqrt(2*pi)*(exp(-euclid_pdist.^2./(2*(kNN_norm_t.^2)))./kNN_norm_t + ...
+            exp(-euclid_pdist.^2./(2*(kNN_norm.^2)))./kNN_norm);
         D = diag(1./sum(W1,2));
         W = D * W1 * D;
-
-        % TODO: use adaptive anisotropic kernel
 
         % diffusion operator
         D = diag(1./sum(W,2));
         P = D * W;
-        powered_diff_op = P^(configParams.t);
+        Pt = P^(configParams.t);
+
+        % diffusion map
+        num_eig = configParams.num_pts;
+        [v,lambda] = eigs((P + P')/2, num_eig, 'la');
+        diff_map_pdist = squareform(pdist(repmat((diag(lambda).^configParams.t)', ...
+                           configParams.num_pts, 1) .* v));
 
         % diffusion curvature
-        metric_thresh = 0.05;
-        n_samples = size(P, 1);
-        diff_curvature = zeros(n_samples, 1);
-        for j = 1:n_samples
-            idx = find(DM_pdist(j,:) < metric_thresh);
-            ball_numel = numel(idx);
-            sum_diff_probs = sum(P(j,idx));
-            diff_curvature(j) = sum_diff_probs/ball_numel;
+        diff_K = zeros(configParams.num_pts, 1);
+        for j = 1:configParams.num_pts
+            idx = find(diff_map_pdist(j,:) < prctile(diff_map_pdist(j,:), 5));
+            diff_K(j) = mean(Pt(j,idx));
         end
 
-        % Visualize
+        % select points to display
+        plt_disp_idx = find(diff_map_pdist(1,:) < prctile(diff_map_pdist(1,:), 70));
+        plt_idx_cmpl = find(diff_map_pdist(1,:) >= prctile(diff_map_pdist(1,:), 70));
+
+        % save points
+        save(strcat('toydata_', string(cnt), '.mat'), 'sample_X', 'sample_Y', 'sample_Z');
+
+        % visualize
 
         %{
         fig = figure('units','inch','position',[0,0,15,2.5]);
@@ -137,7 +142,11 @@ for cs = 1:numel(is_saddle)
         fig = figure('units','inch','position',[0,0,15,2.5]);
 
         ax(1) = subplot(1,3,1);
-        scatter3(sample_X, sample_Y, sample_Z, 3, diff_curvature, "filled")
+        scatter3(sample_X(plt_disp_idx), sample_Y(plt_disp_idx), sample_Z(plt_disp_idx), ...
+                    3, diff_K(plt_disp_idx), "filled")
+        hold on
+        scatter3(sample_X(plt_idx_cmpl), sample_Y(plt_idx_cmpl), sample_Z(plt_idx_cmpl), ...
+                    3, "black", "filled")
         if b < 0
             zlim([-1, 1])
         else
@@ -145,6 +154,7 @@ for cs = 1:numel(is_saddle)
         end
         colormap(ax(1),jet)
         colorbar
+        hold off
 
         ax(2) = subplot(1,3,2);
         scatter3(sample_X, sample_Y, sample_Z, 3, diag(K), "filled")
