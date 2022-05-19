@@ -3,7 +3,7 @@ close all; clear all;
 rng(22519)
 
 % params to vary
-intrinsic_dim = 20;
+intrinsic_dim = 2;
 num_pts = 1000;
 
 % fixed params

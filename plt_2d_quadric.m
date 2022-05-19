@@ -3,7 +3,7 @@ addpath(genpath(pwd));
 rng('shuffle');
 
 quad_coeffs = [0.75, 1];
-quad_scales = [10, 16, 32];
+quad_scales = [16, 32];
 is_saddle = [true, false];
 Xopt = [0, 0];
 Zopt = 0;
@@ -94,8 +94,8 @@ for cs = 1:numel(is_saddle)
 
         % save points
         save(strcat('toydata_', string(cnt), '.mat'), 'sample_X', 'sample_Y', 'sample_Z');
-
-        % visualize
+        
+        % visualize surface
 
         %{
         fig = figure('units','inch','position',[0,0,15,2.5]);
@@ -139,14 +139,20 @@ for cs = 1:numel(is_saddle)
         print(fig, strcat('quadric_', string(cnt)), '-r800', '-dpng');
         %}
 
-        fig = figure('units','inch','position',[0,0,15,2.5]);
+        % compute correlation coefficient and mutual information
+        Karr = diag(K);
+        Ccoeff = round(corrcoef(sort(Karr(plt_disp_idx)),sort(diff_K(plt_disp_idx))),2);
+        MI = round(mi(sort(Karr(plt_disp_idx)),sort(diff_K(plt_disp_idx))),2);
+
+        % plot curvature
+        fig = figure('units','inch','position',[0,0,15,2.75]);
 
         ax(1) = subplot(1,3,1);
         scatter3(sample_X(plt_disp_idx), sample_Y(plt_disp_idx), sample_Z(plt_disp_idx), ...
                     3, diff_K(plt_disp_idx), "filled")
         hold on
         scatter3(sample_X(plt_idx_cmpl), sample_Y(plt_idx_cmpl), sample_Z(plt_idx_cmpl), ...
-                    3, "black", "filled")
+                    3, repmat([0.7, 0.7, 0.7], numel(plt_idx_cmpl), 1), "filled")
         if b < 0
             zlim([-1, 1])
         else
@@ -157,24 +163,43 @@ for cs = 1:numel(is_saddle)
         hold off
 
         ax(2) = subplot(1,3,2);
-        scatter3(sample_X, sample_Y, sample_Z, 3, diag(K), "filled")
+        scatter3(sample_X(plt_disp_idx), sample_Y(plt_disp_idx), sample_Z(plt_disp_idx), ...
+                    3, Karr(plt_disp_idx), "filled")
+        hold on
+        scatter3(sample_X(plt_idx_cmpl), sample_Y(plt_idx_cmpl), sample_Z(plt_idx_cmpl), ...
+                    3, repmat([0.7, 0.7, 0.7], numel(plt_idx_cmpl), 1), "filled")
         if b < 0
             zlim([-1, 1])
         else
             zlim([0, 1])
         end
         colormap(ax(2),jet)
+        %set(ax(2),'ColorScale','log')
         colorbar
+        hold off
+
+        biaxial_plot = [Karr(plt_disp_idx) diff_K(plt_disp_idx)];
+        biaxial_plot_ordered = sortrows(biaxial_plot, 1);
+        biaxial_plot_smt = smoothdata(biaxial_plot_ordered, 1);
 
         ax(3) = subplot(1,3,3);
-        scatter3(sample_X, sample_Y, sample_Z, 3, diag(H), "filled")
-        if b < 0
-            zlim([-1, 1])
-        else
-            zlim([0, 1])
-        end
-        colormap(ax(3),jet)
-        colorbar
+        scatter(Karr(plt_disp_idx), diff_K(plt_disp_idx), 3, "filled")
+        xlabel("Gaussian Curvature")
+        ylabel("Diffusion Curvature")
+        annotstr = strcat('Corr. Coeff. :', {' '}, string(Ccoeff(1,2)) , ', MI :', {' '}, string(MI));
+        title(annotstr, 'FontSize', 13)
+        xlim([min(biaxial_plot(:,1)), max(biaxial_plot(:,1))])
+        ylim([min(biaxial_plot(:,2)), max(biaxial_plot(:,2))])
+        zoom(0.7)
+
+        %yyaxis left
+        %plot(rescale(1:numel(plt_disp_idx)), sort(Karr(plt_disp_idx)))
+        %ylabel('Gaussian Curvature')
+        %hold on
+        %yyaxis right
+        %plot(rescale(1:numel(plt_disp_idx)), log(sort(diff_K(plt_disp_idx))))
+        %ylabel('log(Diffusion Curvature)')
+        %hold off
 
         print(fig, strcat('quad_curvature_', string(cnt)), '-r800', '-dpng');
 
